@@ -1,0 +1,154 @@
+import requests as req
+from bs4 import BeautifulSoup as bs
+from selenium import webdriver
+import datetime
+from datetime import date
+import sympy
+import pandas as pd
+
+DRIVER_PATH = '/Users/Admin/PycharmProjects/PFE/chromedriver.exe'
+
+choice = input("Choose Country ?\n Morocco\n Egypt\n USA\n Spain\n France\n Germany\n UK\n Saudi_arabia\n Japan\n India\n Russia")
+
+if choice == "Morocco":
+    driver = webdriver.Chrome(executable_path=DRIVER_PATH)
+    driver.get('https://www.youtube.com/feed/trending?bp=6gQJRkVleHBsb3Jl') # Maroc
+if choice == "Egypt":
+    driver = webdriver.Chrome(executable_path=DRIVER_PATH)
+    driver.get('https://www.youtube.com/feed/trending?persist_gl=1&gl=EG') # Egypte
+if choice == "USA":
+    driver = webdriver.Chrome(executable_path=DRIVER_PATH)
+    driver.get('https://www.youtube.com/feed/trending?persist_gl=1&gl=US') # Etats unis
+if choice == "Spain":
+    driver = webdriver.Chrome(executable_path=DRIVER_PATH)
+    driver.get('https://www.youtube.com/feed/trending?persist_gl=1&gl=ES') # Espagne
+if choice == "France":
+    driver = webdriver.Chrome(executable_path=DRIVER_PATH)
+    driver.get('https://www.youtube.com/feed/trending?persist_gl=1&gl=FR') # France
+if choice == "Germany":
+    driver = webdriver.Chrome(executable_path=DRIVER_PATH)
+    driver.get('https://www.youtube.com/feed/trending?persist_gl=1&gl=DE') # Allemagne
+if choice == "UK":
+    driver = webdriver.Chrome(executable_path=DRIVER_PATH)
+    driver.get('https://www.youtube.com/feed/trending?persist_gl=1&gl=GB') # Royaume-Uni
+if choice == "Russia":
+    driver = webdriver.Chrome(executable_path=DRIVER_PATH)
+    driver.get('https://www.youtube.com/feed/trending?persist_gl=1&gl=RU') # Russie
+if choice == "Japan":
+    driver = webdriver.Chrome(executable_path=DRIVER_PATH)
+    driver.get('https://www.youtube.com/feed/trending?persist_gl=1&gl=JP') # Japon
+if choice == "Saudi_arabia":
+    driver = webdriver.Chrome(executable_path=DRIVER_PATH)
+    driver.get('https://www.youtube.com/feed/trending?persist_gl=1&gl=SA') # Arabie saoudite
+if choice == "India":
+    driver = webdriver.Chrome(executable_path=DRIVER_PATH)
+    driver.get('https://www.youtube.com/feed/trending?persist_gl=1&gl=IN') # Inde
+
+href_lst = []
+scrap_day_lst = []
+country_trending_lst = []
+cat_lst = []
+titles_lst = []
+descriptions_lst = []
+channels_lst = []
+channels_id_lst = []
+video_id_lst = []
+durations_lst = []
+durations_lst1 = []
+datePublished_lst = []
+views_nbr_lst = []
+views_nbr_lst1 = []
+views_nbr_lst2 = []
+
+for href in driver.find_elements_by_xpath('//*[@id="video-title"]'):
+    href_content1 = href.get_attribute("href")
+    href_lst.append(href_content1)
+#print(href_lst)
+
+for i in range(len(href_lst)):
+    today = date.today()
+    scrap_day_lst.append(datetime.datetime.strftime(today, '%Y-%m-%d'))
+#print(scrap_day_lst)
+
+for i in range(len(href_lst)):
+    country_trending_lst.append(choice)
+#print(country_trending_lst)
+
+for channels in driver.find_elements_by_xpath('//*[@id="text"]/a'):
+    channels_content = channels.text
+    channels_lst.append(str(channels_content))
+
+for element in channels_lst:
+    if element == '':
+        channels_lst.remove(element)
+#print(channels_lst)
+
+
+for views_nbr in driver.find_elements_by_xpath('//*[@id="metadata-line"]/span[1]'):
+    views_nbr_content = views_nbr.text
+    views_nbr_lst.append(views_nbr_content)
+#print(views_nbr_lst)
+a = ' vues'
+b = ' k'
+c = ' M de'
+d = ','
+
+for i in range(len(views_nbr_lst)):
+    if a or b or c or d in views_nbr_lst[i]:
+        res = views_nbr_lst[i].replace(a, "").replace(d, ".").replace(b, "*1000").replace(c, "*1000000")
+        views_nbr_lst1.append(res)
+#print(views_nbr_lst1)
+for i in range(len(views_nbr_lst1)):
+    x = sympy.sympify(views_nbr_lst1[i])
+    views_nbr_lst2.append(int(x))
+#print(views_nbr_lst2)
+
+for i in range(len(href_lst)):
+    url = href_lst[i]
+    response = req.get(url).text
+    html = bs(response, 'html.parser')
+    for tag in html.find_all("meta"):
+        if tag.get("itemprop", None) == "genre":
+            category = tag.get("content", None)
+            cat_lst.append(category)
+        if tag.get("itemprop", None) == "name":
+            title = tag.get("content", None)
+            titles_lst.append(title)
+        if tag.get("itemprop", None) == "description":
+            descrip = tag.get("content", None)
+            descriptions_lst.append(descrip)
+        #if tag.get("itemprop", None) == "channelId":
+            #chanID = tag.get("content", None)
+            #channels_id_lst.append(chanID)
+        if tag.get("itemprop", None) == "videoId":
+            vidID = tag.get("content", None)
+            video_id_lst.append(vidID)
+        if tag.get("itemprop", None) == "duration":
+            duration_ = tag.get("content", None)
+            durations_lst.append(duration_)
+        if tag.get("itemprop", None) == "datePublished":
+           published = tag.get("content", None)
+           datePublished_lst.append(published)
+
+a = 'PT'
+b = 'M'
+c = 'S'
+for i in range(len(durations_lst)):
+    if a or b or c in durations_lst[i]:
+        res = durations_lst[i].replace(a, "").replace(b, ":").replace(c, "")
+        durations_lst1.append(res)
+
+rank = []
+for i in range(len(video_id_lst)):
+    rank.append(i+1)
+
+
+
+dict = {'Rank': rank,'Country': country_trending_lst, 'Day': scrap_day_lst,'Video_id':video_id_lst, 'Title': titles_lst, 'Channel': channels_lst, 'Category': cat_lst, 'Views': views_nbr_lst2, 'Publication': datePublished_lst, 'Duration': durations_lst1, 'Description': descriptions_lst, 'Video_link': href_lst}
+
+df = pd.DataFrame(dict)
+df.to_csv('scrap1.csv', index=False)
+
+
+
+driver.close()
