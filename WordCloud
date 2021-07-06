@@ -1,0 +1,85 @@
+import numpy as np
+import pymysql
+import pandas as pd
+from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
+from PIL import Image
+
+import matplotlib.pyplot as plt
+
+# database connection
+dbcon = pymysql.connect(host='localhost', user='root', password='', database='trending_scrap')
+try:
+    SQL_Query = pd.read_sql_query("SELECT Category, Country FROM records", dbcon)
+    df = pd.DataFrame(SQL_Query, columns=['Category', 'Country'])
+    print(df)
+except:
+    print("Error: Connection failed")
+
+dbcon.close()
+
+print("There are {} observations and {} features in this dataset. \n".format(df.shape[0],df.shape[1]))
+
+print("There are {} types of category in this dataset : {} \n".format(len(df.Category.unique()),", ".join(df.Category.unique())))
+
+print("There are {} countries treated in this dataset : {} \n".format(len(df.Country.unique()),", ".join(df.Country.unique())))
+
+a = df[["Country", "Category"]]
+#print(a)
+
+
+# Groupby by country
+country = a.groupby("Country")
+
+r = country['Category'].value_counts()
+print(r.to_string())
+
+
+a['frequency'] = a['Category'].map(a['Category'].value_counts())
+#a = a.drop_duplicates()
+#print(a.to_string())
+
+fields = ['Category']
+
+text3 = ' '.join(a['Category'])
+wordcloud2 = WordCloud().generate(text3)
+# Generate plot
+plt.imshow(wordcloud2)
+plt.axis("off")
+plt.show()
+
+choice = input('choose country:')
+b = a[a["Country"] == choice]
+print(b)
+
+text4 = ' '.join(b['Category'])
+wordcloud4_ = WordCloud().generate(text4)
+# Generate plot
+plt.imshow(wordcloud4_)
+plt.axis("off")
+plt.show()
+
+wine_mask = np.array(Image.open("img/usa.png"))
+print(wine_mask)
+def transform_format(val):
+    if val == 0:
+        return 255
+    else:
+        return val
+
+transformed_wine_mask = np.ndarray((wine_mask.shape[0],wine_mask.shape[1]), np.int32)
+
+for i in range(len(wine_mask)):
+    transformed_wine_mask[i] = list(map(transform_format, wine_mask[i]))
+
+
+# Create a word cloud image
+wc = WordCloud(background_color="black", max_words=100, mask=transformed_wine_mask,
+               stopwords=STOPWORDS, contour_width=3, contour_color='white')
+# Generate a wordcloud
+wc.generate(text4)
+
+# show
+plt.figure(figsize=[10,5])
+plt.imshow(wc, interpolation='bilinear')
+plt.axis("off")
+plt.show()
